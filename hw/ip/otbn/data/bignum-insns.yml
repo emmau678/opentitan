@@ -52,6 +52,228 @@
       funct3: b000
       wrd: wrd
 
+- mnemonic: bn.mulvec
+  synopsis: Vectorized Multiply of low 16 bits of each 32-bit lane to give a 32-bit result
+  operands:
+    - &mulvec-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &mulvec-wrs1
+      name: wrs1
+      doc: First source WDR.
+    - &mulvec-wrs2
+      name: wrs2
+      doc: Second source WDR.
+  syntax: |
+    <wrd>, <wrs1>, <wrs2>
+  doc: |
+    Performs a vectorized multiply operation on each 32-bit lane of two source WDRs.
+    The low 16 bits of each lane of `<wrs1>` is multiplied by the corresponding low 
+    16 bits of each lane of `<wrs2>`, with the result stored in the same lane of`<wrd>`.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs1, wrs2]
+  encoding:
+    scheme: bnv
+    mapping:
+      wrd: wrd
+      wrs1: wrs1
+      wrs2: wrs2
+      funct3: b100
+      funct7: b1111111
+
+
+- mnemonic: bn.mulvec32
+  synopsis: Vectorized Multiply of 32-bit values in 32-bit lanes
+  operands:
+    - *mulvec-wrd
+    - *mulvec-wrs1
+    - *mulvec-wrs2
+  syntax: |
+    <wrd>, <wrs1>, <wrs2>
+  doc: |
+    Performs a vectorized multiply operation on each 32-bit lane of two source WDRs.
+    The 32-bit value of each lane of `<wrs1>` is multiplied by the corresponding lane 
+    value in `<wrs2>`, with the result stored in the same lane of`<wrd>`.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs1, wrs2]
+  encoding:
+    scheme: bnv
+    mapping:
+      wrd: wrd
+      wrs1: wrs1
+      wrs2: wrs2
+      funct3: b100
+      funct7: b1111110
+
+
+- mnemonic: bn.addvec
+  synopsis: Vectorized Add
+  operands:
+    - &addvec-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &addvec-wrs1
+      name: wrs1
+      doc: First source WDR.
+    - &addvec-wrs2
+      name: wrs2
+      doc: Second source WDR.
+  syntax: |
+    <wrd>, <wrs1>, <wrs2>
+  doc: |
+    Performs a vectorized addition on each 16-bit lane of the two source WDRs.
+    The value in each 16-bit lane of `<wrs1>` is added to the value of the 
+    corresponding lane of `<wrs2>`, with the result stored in the same lane in `<wrd>`.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs1, wrs2]
+  encoding:
+    scheme: bnv
+    mapping:
+      wrd: wrd
+      wrs1: wrs1
+      wrs2: wrs2
+      funct3: b101
+      funct7: b1111111
+
+
+- mnemonic: bn.subvec
+  synopsis: Vectorized Subtract
+  operands:
+    - &subvec-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &subvec-wrs1
+      name: wrs1
+      doc: First source WDR.
+    - &subvec-wrs2
+      name: wrs2
+      doc: Second source WDR.
+  syntax: |
+    <wrd>, <wrs1>, <wrs2>
+  doc: |
+    Performs a vectorized subtraction on each 16-bit lane of the two source WDRs.
+    The value in each 16-bit lane of `<wrs2>` is subtracted from the value of the 
+    corresponding lane of `<wrs1>`, with the result stored in the same lane in `<wrd>`.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs1, wrs2]
+  encoding:
+    scheme: bnv
+    mapping:
+      wrd: wrd
+      wrs1: wrs1
+      wrs2: wrs2
+      funct3: b110
+      funct7: b1111111
+
+
+- mnemonic: bn.rshiftvec
+  synopsis: Vectorized Right Shift
+  operands:
+    - &rshiftvec-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &rshiftvec-wrs
+      name: wrs
+      doc: Source WDR.
+    - &rshiftvec-imm
+      name: imm
+      doc: Immediate value specifying the number of bits by which to shift right.
+  syntax: <wrd>, <wrs>, <imm>
+  doc: Performs a vectorized logical right shift on each 32-bit lane of `<wrs>`. Each lane is shifted right by the number of bits specified in `<imm>`, with zeros shifted into the empty bit positions. The result is stored in `<wrd>`.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs]
+  encoding:
+    scheme: bnvs
+    mapping:
+      wrd: wrd
+      wrs: wrs
+      imm: imm
+      funct2: b10
+      funct7: b1111110
+
+- mnemonic: bn.arshiftvec
+  synopsis: Vectorized Arithmetic Right Shift
+  operands:
+    - *rshiftvec-wrd
+    - *rshiftvec-wrs
+    - *rshiftvec-imm
+  syntax: <wrd>, <wrs>, <imm>
+  doc: Performs a vectorized arithmetic right shift operation across each 32-bit lane of the 256-bit register `<wrs>`. Each lane is shifted right by the number of bits specified in `<imm>`, with leading 1s shifted into the vacated bit positions if the number is negative, else 0. The result is stored in `<wrd>`.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs]
+  encoding:
+    scheme: bnvs
+    mapping:
+      wrd: wrd
+      wrs: wrs
+      imm: imm
+      funct2: b10
+      funct7: b1111101
+
+- mnemonic: bn.lshiftvec
+  synopsis: Vectorized Left Shift
+  operands:
+    - &lshiftvec-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &lshiftvec-wrs
+      name: wrs
+      doc: Source WDR.
+    - &lshiftvec-imm
+      name: imm
+      doc: Immediate value specifying the number of bits by which to shift left.
+  syntax: <wrd>, <wrs>, <imm>
+  doc: Performs a vectorized logical left shift operation across each 32-bit lane of the 256-bit register `<wrs>`. Each lane is shifted left by the number of bits specified in `<imm>`, with zeros shifted into the vacated bit positions. The result is stored in `<wrd>`.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs]
+  encoding:
+    scheme: bnvs
+    mapping:
+      wrd: wrd
+      wrs: wrs
+      imm: imm
+      funct2: b10
+      funct7: b1111100
+
+- mnemonic: bn.broadcast
+  synopsis: Vectorized Broadcast
+  operands:
+    - &broadcast-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &broadcast-grs
+      name: grs
+      doc: Source GPR (General Purpose Register) containing the 32-bit value to be broadcast.
+  syntax: |
+    <wrd>, <grs>
+  doc: |
+    Broadcasts the 32-bit value from the specified GPR (`<grs>`) across each of the 8 32-bit lanes of the destination WDR (`<wrd>`). The same 32-bit value from `<grs>` is replicated in each lane of `<wrd>`.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [grs]
+  encoding:
+    scheme: bnb
+    mapping:
+      wrd: wrd
+      grs: grs
+      funct3: b110
+      funct7: b1111011
+
 - mnemonic: bn.addc
   synopsis: Add with Carry
   operands: *bn-add-operands
@@ -568,6 +790,34 @@
       wrs1: wrs1
       funct2: b11
       wrd: wrd
+
+- mnemonic: bn.lshi
+  synopsis: Concatenate and left shift immediate
+  operands:
+    - name: wrd
+      doc: Name of the destination WDR
+    - name: wrs1
+      doc: Name of the first source WDR
+    - name: wrs2
+      doc: Name of the second source WDR
+    - name: imm
+      type: uimm
+      doc: |
+        Number of bits to shift the second source register by. Valid range: 0..(WLEN-1).
+  syntax: |
+    <wrd>, <wrs1>, <wrs2> >> <imm>
+  doc: |
+    Concatenates the content of WDRs referenced by `wrs1` and `wrs2` (`wrs1` forms the upper part), shifts it left by an immediate value and returns the upper WLEN bits.
+    The result is stored in the WDR referenced by `wrd`.
+  errs: []
+  encoding:
+    scheme: bnlshi
+    mapping:
+      wrd: wrd # Destination register (5 bits to address 32 registers)
+      wrs1: wrs1 # Source register (5 bits to address 32 registers)
+      wrs2: wrs2
+      funct2: b11
+      imm: imm # Immediate value for shift amount (needs specific encoding)
 
 - mnemonic: bn.sel
   synopsis: Flag Select

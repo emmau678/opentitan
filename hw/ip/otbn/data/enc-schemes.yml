@@ -147,6 +147,11 @@ custom3:
   parents:
     - rv(opcode=b11110)
 
+# A partial scheme for custom instructions with opcode b10110
+custom4:
+  parents:
+    - rv(opcode=b10110)
+
 # A partial scheme for instructions that produce a dest WDR.
 wrd:
   fields:
@@ -160,6 +165,23 @@ wdr3:
   fields:
     wrs2: 24-20
     wrs1: 19-15
+
+# A partial scheme for instructions that take one source WDR, an imm and produce a
+# dest WDR (vectorized shift)
+wdr4:
+  parents:
+    - wrd
+  fields:
+    wrs: 24-20
+    imm: 19-14
+
+# A partial scheme for BN broadcast. Takes one source WDR, one source GPR and produces a
+# dest WDR (vectorized shift)
+wdr5:
+  parents:
+    - wrd
+  fields:
+    grs: 24-20
 
 # A partial scheme that defines the 'fg' field (for <flag_group> operands)
 fg:
@@ -277,6 +299,46 @@ bnaq:
     qs1: 26-25
     shift: 14-13
     z: 12
+
+# Scheme for BN vector extensions (add, mul, sub)
+bnv:
+  parents:
+    - custom4
+    - wdr3
+    - funct3
+  fields:
+    funct7: 31-25
+
+# Scheme for BN shift vector extensions
+bnvs:
+  parents:
+    - custom4
+    - wdr4
+    - funct2
+  fields:
+    funct7: 31-25
+
+# Scheme for BN.LSHI (since bnr encoding of BN.RSHI is full)
+# Scheme for BN vector extensions (add, mul, sub)
+bnlshi:
+  parents:
+    - custom4
+    - wdr3
+  fields:
+    imm: 31-25,14
+    funct2: 13-12
+
+# Scheme for BN broadcast
+bnb:
+  parents:
+    - custom4
+    - wdr5
+    - funct3
+  fields:
+    funct7: 31-25
+    fixed:
+      bits: 19-15
+      value: bxxxxx
 
 # Unusual scheme used for bn.rshi (the immediate bleeds into the usual funct3
 # field)

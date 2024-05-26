@@ -551,6 +551,265 @@ class BNADD(OTBNInsn):
         state.wdrs.get_reg(self.wrd).write_unsigned(masked_result)
         state.set_flags(self.flag_group, flags)
 
+##
+# Instruction which performs a vectorized multiplication operation on each 32-bit
+# lane of two 256-bit WDR source registers. This instruction multiplies the low
+# 16 bits of each corresponding lane together and writes the resulting value
+# (32 bits) to the destination register.
+##
+class BNMULVEC(OTBNInsn):
+    insn = insn_for_mnemonic('bn.mulvec', 3)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs1 = op_vals['wrs1']
+        self.wrs2 = op_vals['wrs2']
+
+    def execute(self, state: OTBNState) -> None:
+        src1 = state.wdrs.get_reg(self.wrs1).read_unsigned()
+        src2 = state.wdrs.get_reg(self.wrs2).read_unsigned()
+
+        result = 0
+
+        # Function to convert 16-bit unsigned to signed
+        def to_signed_16(value):
+            if value & 0x8000:  # Check if the sign bit is set
+                return -((~value & 0xFFFF) + 1)
+            return value
+
+        # Iterate over each 32-bit lane
+        for lane_idx in range(8):
+            # Extract the 16-bit elements from each lane of the src regs
+            src1_lane = (src1 >> (lane_idx * 32)) & 0xFFFF
+            src2_lane = (src2 >> (lane_idx * 32)) & 0xFFFF
+
+            # Convert to signed
+            src1_lane_signed = to_signed_16(src1_lane)
+            src2_lane_signed = to_signed_16(src2_lane)
+
+            # Multiply the 16-bit elements. Result <= 32 bits
+            mul_res = (src1_lane_signed * src2_lane_signed) & 0xFFFFFFFF
+
+            # Concatenate the results from the different lanes
+            result |= mul_res << (lane_idx * 32)
+
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+
+##
+# Instruction which performs a vectorized multiplication operation on each 32-bit
+# lane of two 256-bit source WDR registers. This instruction multiplies the 32-
+# bit value in each corresponding lane of the source regs together, truncates the 
+# resulting value to 32 bits and writes it to the destination register.
+##
+class BNMULVEC32(OTBNInsn):
+    insn = insn_for_mnemonic('bn.mulvec32', 3)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs1 = op_vals['wrs1']
+        self.wrs2 = op_vals['wrs2']
+
+    def execute(self, state: OTBNState) -> None:
+        src1 = state.wdrs.get_reg(self.wrs1).read_unsigned()
+        src2 = state.wdrs.get_reg(self.wrs2).read_unsigned()
+
+        result = 0
+
+        for lane_idx in range(8):
+            src1_lane = (src1 >> (lane_idx * 32)) & 0xFFFFFFFF
+            src2_lane = (src2 >> (lane_idx * 32)) & 0xFFFFFFFF
+
+            mul_res = (src1_lane * src2_lane) & 0xFFFFFFFF
+
+            result |= mul_res << (lane_idx * 32)
+
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+
+##
+# Instruction which performs a vectorized addition operation on each 16-bit
+# lane of two 256-bit source WDR registers. This instruction adds the 16-bit value
+# of each corresponding lanes of the source regs together and writes the result
+# (truncated to 16 bits) to the destination register.
+##
+class BNADDVEC(OTBNInsn):
+    insn = insn_for_mnemonic('bn.addvec', 3)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs1 = op_vals['wrs1']
+        self.wrs2 = op_vals['wrs2']
+
+    def execute(self, state: OTBNState) -> None:
+        src1 = state.wdrs.get_reg(self.wrs1).read_unsigned()
+        src2 = state.wdrs.get_reg(self.wrs2).read_unsigned()
+
+        result = 0
+
+        for lane_idx in range(16):
+            src1_lane = (src1 >> (lane_idx * 16)) & 0xFFFF
+            src2_lane = (src2 >> (lane_idx * 16)) & 0xFFFF
+
+            add_res = (src1_lane + src2_lane) & 0xFFFF
+
+            result |= add_res << (lane_idx * 16)
+
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+##
+# Instruction which performs a vectorized subtraction operation on each 16-bit
+# lane of two 256-bit source WDR registers. This instruction performs subtraction
+# between the 16-bit values of each corresponding lane of the source regs and
+# writes the result (truncated to 16 bits) to the destination register.
+##
+class BNSUBVEC(OTBNInsn):
+    insn = insn_for_mnemonic('bn.subvec', 3)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs1 = op_vals['wrs1']
+        self.wrs2 = op_vals['wrs2']
+
+    def execute(self, state: OTBNState) -> None:
+        src1 = state.wdrs.get_reg(self.wrs1).read_unsigned()
+        src2 = state.wdrs.get_reg(self.wrs2).read_unsigned()
+
+        result = 0
+
+        for lane_idx in range(16):
+            src1_lane = (src1 >> (lane_idx * 16)) & 0xFFFF
+            src2_lane = (src2 >> (lane_idx * 16)) & 0xFFFF
+
+            sub_res = (src1_lane - src2_lane) & 0xFFFF
+
+            result |= sub_res << (lane_idx * 16)
+
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+
+##
+# Instruction which performs a vectorized logical right shift operation on each 32-bit
+# lane of a 256-bit WDR register. This instruction shifts the value in each 
+# lane right by a specified number of bits and writes the result to the destination 
+# register.
+##
+class BNRSHIFTVEC(OTBNInsn):
+    insn = insn_for_mnemonic('bn.rshiftvec', 3)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs = op_vals['wrs']
+        self.imm = op_vals['imm']
+
+    def execute(self, state: OTBNState) -> None:
+        src = state.wdrs.get_reg(self.wrs).read_unsigned()
+
+        result = 0
+
+        for lane_idx in range(8):
+            src_lane = (src >> (lane_idx * 32)) & 0xFFFFFFFF
+
+            rshift_res = src_lane >> self.imm
+
+            result |= rshift_res << (lane_idx * 32)
+
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+
+##
+# Instruction which performs a vectorized arithmetic right shift on each 32-bit
+# lane of a 256-bit WDR. This instruction shifts the value in each 
+# lane right by a specified number of bits and writes the result to the destination 
+# register. Leading 1s are inserted if the value is negative
+##
+class BNARSHIFTVEC(OTBNInsn):
+    insn = insn_for_mnemonic('bn.arshiftvec', 3)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs = op_vals['wrs']
+        self.imm = op_vals['imm']
+
+    def execute(self, state: OTBNState) -> None:
+        src = state.wdrs.get_reg(self.wrs).read_unsigned()
+
+        result = 0
+
+        for lane_idx in range(8):
+            src_lane = (src >> (lane_idx * 32)) & 0xFFFFFFFF
+
+            # Check if the source lane is negative (most significant bit is 1)
+            if src_lane & 0x80000000:
+                mask = (2 ** 32 - 1) << (32 - self.imm) if self.imm < 32 else 0xFFFFFFFF
+                arshift_res = ((src_lane >> self.imm) | mask) & 0xFFFFFFFF
+            else:
+                arshift_res = src_lane >> self.imm
+
+            result |= arshift_res << (lane_idx * 32)
+
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+
+
+##
+# Instruction which performs a vectorized left shift operation on each 32-bit
+# lane of a 256-bit WDR register. This instruction shifts the value in each 
+# lane left by a specified number of bits and writes the result to the destination 
+# register.
+##
+class BNLSHIFTVEC(OTBNInsn):
+    insn = insn_for_mnemonic('bn.lshiftvec', 3)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs = op_vals['wrs']
+        self.imm = op_vals['imm']
+
+    def execute(self, state: OTBNState) -> None:
+        src = state.wdrs.get_reg(self.wrs).read_unsigned()
+
+        result = 0
+
+        for lane_idx in range(8):
+            src_lane = (src >> (lane_idx * 32)) & 0xFFFFFFFF
+
+            lshift_res = (src_lane << self.imm) & 0xFFFFFFFF
+
+            result |= lshift_res << (lane_idx * 32)
+
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+
+##
+# Instruction which broadcasts a 32-bit value from a GPR to every 32-bit lane within a WDR
+##
+class BNBROADCAST(OTBNInsn):
+    insn = insn_for_mnemonic('bn.broadcast', 2)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.gpr = op_vals['grs']
+
+    def execute(self, state: OTBNState) -> None:
+        src = state.gprs.get_reg(self.gpr).read_unsigned()
+
+        result = 0
+
+        # replicate the src value across all 32-bit lanes
+        for lane_idx in range(8):
+            result |= src << (lane_idx * 32)
+
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
 
 class BNADDC(OTBNInsn):
     insn = insn_for_mnemonic('bn.addc', 6)
@@ -957,6 +1216,29 @@ class BNRSHI(OTBNInsn):
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
 
 
+##
+# Concatenates the content of WDRs referenced by `wrs1` and `wrs2` 
+# (`wrs1` forms the upper part), shifts it left by an immediate 
+# value and returns the upper WLEN bits.
+##
+class BNLSHI(OTBNInsn):
+    insn = insn_for_mnemonic('bn.lshi', 4)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs1 = op_vals['wrs1']
+        self.wrs2 = op_vals['wrs2']
+        self.imm = op_vals['imm']
+
+    def execute(self, state: OTBNState) -> None:
+        a = state.wdrs.get_reg(self.wrs1).read_unsigned()
+        b = state.wdrs.get_reg(self.wrs2).read_unsigned()
+
+        result = (((a << 256) | b) << self.imm) & ((1 << 256) - 1)
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+
 class BNSEL(OTBNInsn):
     insn = insn_for_mnemonic('bn.sel', 5)
 
@@ -1273,11 +1555,13 @@ INSN_CLASSES = [
     ECALL,
     LOOP, LOOPI,
 
-    BNADD, BNADDC, BNADDI, BNADDM,
+    BNMULVEC, BNMULVEC32, BNADDVEC, BNSUBVEC, 
+    BNRSHIFTVEC, BNLSHIFTVEC, BNARSHIFTVEC,
+    BNBROADCAST, BNADD, BNADDC, BNADDI, BNADDM,
     BNMULQACC, BNMULQACCWO, BNMULQACCSO,
     BNSUB, BNSUBB, BNSUBI, BNSUBM,
     BNAND, BNOR, BNNOT, BNXOR,
-    BNRSHI,
+    BNRSHI, BNLSHI,
     BNSEL,
     BNCMP, BNCMPB,
     BNLID, BNSID,
