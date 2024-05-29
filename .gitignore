@@ -2,6 +2,8 @@
 *.bak
 *.swp
 *.swo
+
+hw/ip/otbn/dv/otbnsim/test/ntt_test_vectors/*
 tags
 __pycache__
 /.vscode
